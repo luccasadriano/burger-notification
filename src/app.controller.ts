@@ -9,7 +9,7 @@ export class AppController {
 
   @EventPattern('notification-email')
   async sendEmail(@Payload() data: IEmail): Promise<void> {
-    await this.appService.sendEmail(Number(data.id), data.email, data.name)
+    await this.appService.sendEmail(data.id, data.email, data.name)
   }
 
   @EventPattern('notification-sms')
