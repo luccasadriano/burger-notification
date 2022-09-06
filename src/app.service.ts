@@ -1,4 +1,4 @@
-import { SendGridService } from '@anchan828/nest-sendgrid'
+import { MailerService } from '@nestjs-modules/mailer'
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Client, IMessage, TextContent } from '@zenvia/sdk'
@@ -10,9 +10,9 @@ import { Notification } from './interfaces/notification.interface'
 @Injectable()
 export class AppService {
   constructor(
-    private readonly sendGrid: SendGridService,
     @InjectModel('Notification')
     private readonly notificationModel: Model<Notification>,
+    private readonly mailerService: MailerService,
   ) {}
 
   private async createMongoNotification(
@@ -33,18 +33,14 @@ export class AppService {
   }
 
   async sendEmail(id: number, email: string, name: string) {
-    console.log('email --->:', email)
-    console.log('name --->:', name)
-
-    console.log(process.env.FROM_EMAIL)
-
-    const test = await this.sendGrid
-      .send({
+    await this.mailerService
+      .sendMail({
         to: email,
-        from: process.env.FROM_EMAIL,
         subject: 'Aviso de burgers',
-        text: `Olá ${name}, Foi enviado seu burgão! só esperar para ver como será seu ranking`,
-        html: `<strong>Olá ${name}, Foi enviado seu burgão! só esperar para ver como será seu ranking</strong>`,
+        template: './confirm',
+        context: {
+          name: name,
+        },
       })
       .then(async (response) => {
         await this.createMongoNotification(
@@ -55,8 +51,6 @@ export class AppService {
         )
       })
       .catch(async (err) => {
-        console.log('err --->', err.response.headers)
-        console.log('err --->', err.response.body)
         await this.createMongoNotification(
           id,
           notification.EMAIL,
@@ -64,8 +58,6 @@ export class AppService {
           notification.ERROR,
         )
       })
-
-    console.log('test', test)
   }
 
   async sendSMS(id: number, phone: string, name: string): Promise<void> {
